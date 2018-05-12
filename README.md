@@ -8,5 +8,5 @@ Usage: ./facedet <model> <image path>
 
 ## Requirements
 
- * opencv-devel
+ * opencv-devel (libopencv-dev on Debian)
  * C/C++ development tools
