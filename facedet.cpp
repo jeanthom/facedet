@@ -1,45 +1,46 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
-#include <opencv/ml.h>
+#include <opencv2/opencv.hpp>
+#include <vector>
 
 int main (int argc, char **argv) {
-  int i;
-  IplImage *src_img = 0, *src_gray = 0;
-  CvHaarClassifierCascade *cascade = 0;
-  CvMemStorage *storage = 0;
-  CvSeq *faces;
+  /* Parameters */
+  const double kScaleFactor = 1.11;
+  const int kMinNeighbors = 4;
+  const cv::Size kMinSize = cv::Size(40, 40);
 
   if (argc != 3) {
     fprintf(stderr, "Usage: %s <model> <image path>\n", argv[0]);
     return EXIT_FAILURE;
   }
-  
-  cascade = (CvHaarClassifierCascade *) cvLoad(argv[1], 0, 0, 0);
-  if (!cascade) {
-    fprintf(stderr, "Unable to load model\n");
-    return EXIT_FAILURE;
-  }
 
-  src_img = cvLoadImage(argv[2]);
-  if (!src_img) {
-    fprintf(stderr, "Image coulnd't be loaded\n");
-    return EXIT_FAILURE;
-  }
+  auto classifier = cv::CascadeClassifier(argv[1]);
   
-  src_gray = cvCreateImage (cvGetSize(src_img), IPL_DEPTH_8U, 1);
+  cv::Mat srcImage = cv::imread(argv[2], cv::IMREAD_GRAYSCALE);
+  cv::Mat equalizedImage;
+  cv::equalizeHist(srcImage, equalizedImage);
   
-  storage = cvCreateMemStorage (0);
-  cvClearMemStorage (storage);
-  cvCvtColor (src_img, src_gray, CV_BGR2GRAY);
-  cvEqualizeHist (src_gray, src_gray);
-  
-  faces = cvHaarDetectObjects (src_gray, cascade, storage,
-                               1.11, 4, 0, cvSize (40, 40));
-  for (i = 0; i < (faces ? faces->total : 0); i++) {
-    CvRect *r = (CvRect *) cvGetSeqElem (faces, i);
-    printf("%d %d %d %d\n", r->x, r->y, r->width, r->height);
+  std::vector<cv::Rect> objects;
+  std::vector<int> rejectLevels;
+  std::vector<double> levelWeights;
+  classifier.detectMultiScale(equalizedImage,
+    objects,
+    rejectLevels,
+    levelWeights,
+    kScaleFactor,
+    kMinNeighbors,
+    cv::CASCADE_SCALE_IMAGE,
+    kMinSize,
+    cv::Size(),
+    true);
+
+  for (size_t i = 0; i < objects.size(); i++) {
+    printf("Face detected : %d %d %d %d rejectLevels=%d levelWeights=%.10f\n",
+      objects[i].x,
+      objects[i].y,
+      objects[i].width,
+      objects[i].height,
+      rejectLevels[i],
+      levelWeights[i]);
   }
   
   return EXIT_SUCCESS;
