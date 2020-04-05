@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <algorithm>
 
 int main (int argc, char **argv) {
   /* Parameters */
@@ -20,27 +21,30 @@ int main (int argc, char **argv) {
   cv::equalizeHist(srcImage, equalizedImage);
   
   std::vector<cv::Rect> objects;
-  std::vector<int> rejectLevels;
-  std::vector<double> levelWeights;
+  std::vector<int> numDetections;
   classifier.detectMultiScale(equalizedImage,
     objects,
-    rejectLevels,
-    levelWeights,
+    numDetections,
     kScaleFactor,
     kMinNeighbors,
-    cv::CASCADE_SCALE_IMAGE,
-    kMinSize,
-    cv::Size(),
-    true);
+    /*cv::CASCADE_SCALE_IMAGE*/0,
+    kMinSize);
 
-  for (size_t i = 0; i < objects.size(); i++) {
-    printf("Face detected : %d %d %d %d rejectLevels=%d levelWeights=%.10f\n",
-      objects[i].x,
-      objects[i].y,
-      objects[i].width,
-      objects[i].height,
-      rejectLevels[i],
-      levelWeights[i]);
+  std::vector<std::pair<cv::Rect, int>> rectPairs;
+  for (size_t i = 0; i <objects.size(); i++) {
+    rectPairs.push_back(std::make_pair(objects[i], numDetections[i]));
+  }
+
+  std::sort(std::begin(rectPairs), std::end(rectPairs), [&](const auto& a, const auto& b) {
+    return a.second > b.second;
+  });
+
+  for (auto it = rectPairs.begin(); it != rectPairs.end(); it++) {
+    printf("%d %d %d %d\n",
+      it->first.x,
+      it->first.y,
+      it->first.width,
+      it->first.height);
   }
   
   return EXIT_SUCCESS;
