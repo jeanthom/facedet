@@ -1,7 +1,7 @@
-CFLAGS := -Wall -Wextra -Werror $(shell pkg-config --cflags --libs opencv)
+CFLAGS := -Wall -Wextra -Werror $(shell pkg-config --cflags --libs opencv4)
 
 facedet: facedet.cpp
-	$(CXX) $(CFLAGS) facedet.cpp -o facedet
+	$(CXX) facedet.cpp $(CFLAGS) -o facedet
 
 clean:
 	rm facedet
